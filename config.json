@@ -1,0 +1,18 @@
+{
+  "configs": [
+    {
+      "channelId": "REPLACE_WITH_CHANNEL_ID",
+      "roleId": "REPLACE_WITH_ROLE_ID",
+      "buttonLabel": "Devenir Fan",
+      "promoTitle": "🔥 Contenu Exclusif",
+      "promoMessage": "Hey ! Clique sur le bouton ci-dessous pour devenir fan et recevoir un contenu exclusif en message privé !",
+      "dmContent": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnZ4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4Y3Z4/giphy.gif",
+      "dmEnabled": true
+    }
+  ],
+  "adminRoles": [
+    "REPLACE_WITH_ADMIN_ROLE_ID_OR_USER_ID"
+  ],
+  "ownerId": "367637823270158337",
+  "prefix": "!"
+}
