@@ -14,5 +14,9 @@
     "REPLACE_WITH_ADMIN_ROLE_ID_OR_USER_ID"
   ],
   "ownerId": "367637823270158337",
-  "prefix": "!"
+  "prefix": "!",
+  "blacklist": {
+    "users": [],
+    "roles": []
+  }
 }

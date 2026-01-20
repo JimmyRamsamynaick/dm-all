@@ -201,6 +201,81 @@ async function handleCommand(message) {
         }
     }
 
+    if (command === 'blacklist') {
+        // Usage: !blacklist <add|remove|list> <user|role> <id>
+        if (args.length === 0) {
+            return message.reply("Usage: `!blacklist <add|remove|list> <user|role> <id>`");
+        }
+
+        const action = args[0].toLowerCase();
+
+        // Ensure blacklist config exists
+        if (!config.blacklist) config.blacklist = { users: [], roles: [] };
+
+        if (action === 'list') {
+            const users = config.blacklist.users.map(id => `<@${id}>`).join(', ') || "Aucun";
+            const roles = config.blacklist.roles.map(id => `<@&${id}>`).join(', ') || "Aucun";
+            
+            const embed = new EmbedBuilder()
+                .setColor(0x000000)
+                .setTitle("⛔ Blacklist DM All")
+                .addFields(
+                    { name: 'Utilisateurs', value: users },
+                    { name: 'Rôles', value: roles }
+                );
+            return message.reply({ embeds: [embed] });
+        }
+
+        if (args.length < 3) {
+            return message.reply("Usage: `!blacklist <add|remove> <user|role> <id>`");
+        }
+
+        const type = args[1].toLowerCase();
+        const targetId = args[2].replace(/[<@&>]/g, ''); // Strip mentions
+
+        if (action === 'add') {
+            if (type === 'user') {
+                if (!config.blacklist.users.includes(targetId)) {
+                    config.blacklist.users.push(targetId);
+                    saveConfig();
+                    return message.reply(`✅ Utilisateur <@${targetId}> ajouté à la blacklist.`);
+                } else {
+                    return message.reply("Cet utilisateur est déjà dans la blacklist.");
+                }
+            } else if (type === 'role') {
+                if (!config.blacklist.roles.includes(targetId)) {
+                    config.blacklist.roles.push(targetId);
+                    saveConfig();
+                    return message.reply(`✅ Rôle <@&${targetId}> ajouté à la blacklist.`);
+                } else {
+                    return message.reply("Ce rôle est déjà dans la blacklist.");
+                }
+            }
+        } else if (action === 'remove') {
+             if (type === 'user') {
+                const index = config.blacklist.users.indexOf(targetId);
+                if (index > -1) {
+                    config.blacklist.users.splice(index, 1);
+                    saveConfig();
+                    return message.reply(`🗑️ Utilisateur <@${targetId}> retiré de la blacklist.`);
+                } else {
+                    return message.reply("Cet utilisateur n'est pas dans la blacklist.");
+                }
+            } else if (type === 'role') {
+                const index = config.blacklist.roles.indexOf(targetId);
+                if (index > -1) {
+                    config.blacklist.roles.splice(index, 1);
+                    saveConfig();
+                    return message.reply(`🗑️ Rôle <@&${targetId}> retiré de la blacklist.`);
+                } else {
+                    return message.reply("Ce rôle n'est pas dans la blacklist.");
+                }
+            }
+        }
+        
+        return message.reply("Type invalide. Utilisez `user` ou `role`.");
+    }
+
     if (command === 'dmall') {
         // Usage: !dmall <roleId> [--btn <channelId>] <message...>
         if (args.length < 2 && message.attachments.size === 0) {
@@ -272,6 +347,18 @@ async function handleCommand(message) {
 
         for (const [memberId, member] of members) {
             if (member.user.bot) continue;
+
+            // Check Blacklist
+            if (config.blacklist) {
+                if (config.blacklist.users.includes(memberId)) {
+                    // console.log(`Skipped blacklisted user: ${member.user.tag}`);
+                    continue;
+                }
+                if (config.blacklist.roles.some(rId => member.roles.cache.has(rId))) {
+                    // console.log(`Skipped user with blacklisted role: ${member.user.tag}`);
+                    continue;
+                }
+            }
 
             try {
                 const payload = {};
@@ -438,9 +525,10 @@ async function handleCommand(message) {
             .setDescription("Voici la liste des commandes disponibles pour configurer le bot.")
             .addFields(
                 { name: '📢 Promotion Automatique', value: 'Le bot réagit automatiquement aux messages dans les salons configurés.' },
-                { name: '📨 DM de Masse', value: '`!dmall <RoleID> <Message>`\nEnvoie un DM à tous les membres ayant un rôle spécifique.\nOption: `--btn` pour ajouter le bouton "Devenir Fan".\nVous pouvez attacher une image/vidéo à la commande !' },
+                { name: '📨 DM de Masse', value: '`!dmall <RoleID> <Message>`\nEnvoie un DM à tous les membres ayant un rôle spécifique.\nOption: `--btn` pour ajouter le bouton "Devenir Fan".\n*Les membres/rôles blacklistés seront ignorés.*' },
                 { name: '⚙️ Gestion des Configs', value: '`!config list` : Voir les configs actives\n`!config add <#Salon> <@Role>` : Ajouter une surveillance (Attachez une image pour le cadeau DM !)\n`!config del <#Salon>` : Supprimer une surveillance' },
                 { name: '✏️ Modifier une Config', value: '`!config set <#Salon> <Option> <Valeur>`\n\n**Options :**\n`msg` : Message du salon (Utilisez `<nom d\'user>` pour le pseudo)\n`title` : Titre de l\'embed\n`dm` : Contenu du DM (Texte)\n`btn` : Texte du bouton\n`enabled` : Activer les DM (true/false)\n`img` : Image du message public\n`dm_img` : Image envoyée en DM (Cadeau)' },
+                { name: '⛔ Blacklist', value: '`!blacklist list` : Voir la blacklist\n`!blacklist add <user|role> <id>` : Bloquer un user/rôle\n`!blacklist remove <user|role> <id>` : Débloquer' },
                 { name: '🔄 Reset DM', value: '`!resetdm [@User]`\nRéinitialise l\'historique des DM pour vous ou un utilisateur spécifique (permet de recevoir le cadeau à nouveau).' }
             )
             .setFooter({ text: 'Bot Promotion - Admin Only' });
