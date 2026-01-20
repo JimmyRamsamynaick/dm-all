@@ -35,6 +35,9 @@ const client = new Client({
 // --- Events ---
 
 client.once('ready', () => {
+    if (client.user.username !== "La voix de Kaelys") {
+        client.user.setUsername("La voix de Kaelys").catch(console.error);
+    }
     console.log(`Logged in as ${client.user.tag}!`);
     console.log(`Bot is ready to watch ${config.configs.length} channels.`);
 });
@@ -338,9 +341,12 @@ async function handleCommand(message) {
                 .setColor(0x00FF00);
             
             config.configs.forEach((c, index) => {
+                const dmStatus = c.dmAttachment ? "📸 Image configurée" : "❌ Pas d'image";
+                const dmText = c.dmContent ? (c.dmContent.length > 50 ? c.dmContent.substring(0, 50) + '...' : c.dmContent) : "Aucun texte";
+                
                 embed.addFields({
-                    name: `Config #${index + 1} (Salon: ${c.channelId})`,
-                    value: `Role: <@&${c.roleId}>\nDM Actif: ${c.dmEnabled}\nLabel: ${c.buttonLabel}`
+                    name: `Config #${index + 1} | Salon: <#${c.channelId}>`,
+                    value: `**Rôle :** <@&${c.roleId}>\n**DM Actif :** ${c.dmEnabled ? '✅' : '❌'}\n**Message DM :** ${dmText}\n**Cadeau DM :** ${dmStatus}`
                 });
             });
             return message.reply({ embeds: [embed] });
