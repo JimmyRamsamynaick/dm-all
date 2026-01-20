@@ -5,7 +5,7 @@
       "roleId": "REPLACE_WITH_ROLE_ID",
       "buttonLabel": "Devenir Fan",
       "promoTitle": "🔥 Contenu Exclusif",
-      "promoMessage": "Hey ! Clique sur le bouton ci-dessous pour devenir fan et recevoir un contenu exclusif en message privé !",
+      "promoMessage": "Hey ! Clique sur le bouton ci-dessous pour devenir fan de \"<nom d'user>\" et recevoir un contenu exclusif en message privé !",
       "dmContent": "",
       "dmEnabled": true
     }
@@ -13,6 +13,6 @@
   "adminRoles": [
     "REPLACE_WITH_ADMIN_ROLE_ID_OR_USER_ID"
   ],
-  "ownerId": "",
+  "ownerId": "367637823270158337",
   "prefix": "!"
 }
