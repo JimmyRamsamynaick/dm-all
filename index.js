@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Partials, ActionRowBuilder, ButtonBuilder, Bu
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 // --- Configuration ---
 const CONFIG_PATH = path.join(__dirname, 'config.json');
@@ -11,6 +12,39 @@ const DATA_PATH = path.join(__dirname, 'data.json');
 let config = require(CONFIG_PATH);
 // Load data
 let data = require(DATA_PATH);
+
+function ensureDmFolder() {
+    const folder = path.join(__dirname, 'dm_files');
+    if (!fs.existsSync(folder)) {
+        fs.mkdirSync(folder, { recursive: true });
+    }
+    return folder;
+}
+
+function downloadAttachmentToLocal(url, filename) {
+    return new Promise((resolve, reject) => {
+        const folder = ensureDmFolder();
+        const filePath = path.join(folder, filename);
+        const file = fs.createWriteStream(filePath);
+
+        https.get(url, (response) => {
+            if (response.statusCode !== 200) {
+                file.close(() => {
+                    fs.unlink(filePath, () => reject(new Error(`Download failed with status ${response.statusCode}`)));
+                });
+                return;
+            }
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close(() => resolve(filePath));
+            });
+        }).on('error', (err) => {
+            file.close(() => {
+                fs.unlink(filePath, () => reject(err));
+            });
+        });
+    });
+}
 
 function saveData() {
     fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
@@ -450,7 +484,15 @@ async function handleCommand(message) {
 
             let dmAttachment = null;
             if (message.attachments.size > 0) {
-                dmAttachment = message.attachments.first().url;
+                const attachment = message.attachments.first();
+                const safeName = attachment.name || "dm_attachment";
+                const filename = `${channelId}_dm_${Date.now()}_${safeName}`;
+                try {
+                    dmAttachment = await downloadAttachmentToLocal(attachment.url, filename);
+                } catch (e) {
+                    console.error("Error while caching DM attachment:", e);
+                    return message.reply("Impossible d'enregistrer l'image du DM. Réessayez plus tard.");
+                }
             }
 
             config.configs.push({
@@ -498,7 +540,6 @@ async function handleCommand(message) {
                 case 'btn': conf.buttonLabel = value; break;
                 case 'enabled': conf.dmEnabled = (value === 'true' || value === '1' || value === 'on'); break;
                 case 'img':
-                    // Check for attachment first
                     if (message.attachments.size > 0) {
                         value = message.attachments.first().url;
                     }
@@ -506,9 +547,16 @@ async function handleCommand(message) {
                     conf.promoAttachment = value;
                     break;
                 case 'dm_img':
-                    // Check for attachment first
                     if (message.attachments.size > 0) {
-                        value = message.attachments.first().url;
+                        const attachment = message.attachments.first();
+                        const safeName = attachment.name || "dm_attachment";
+                        const filename = `${channelId}_dm_${Date.now()}_${safeName}`;
+                        try {
+                            value = await downloadAttachmentToLocal(attachment.url, filename);
+                        } catch (e) {
+                            console.error("Error while caching DM attachment:", e);
+                            return message.reply("Impossible d'enregistrer l'image du DM. Réessayez plus tard.");
+                        }
                     }
                     if (!value) return message.reply("Veuillez fournir une URL ou attacher une image/vidéo pour le DM.");
                     conf.dmAttachment = value;
